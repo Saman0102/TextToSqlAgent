@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: text_to_sql
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+    ports:
+      - "5429:5430"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./sql/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+
+  app:
+    build: .
+    volumes:
+      - ../config:/app/config:ro
+    depends_on:
+      - db
+    ports:
+      - "8501:8501"
+
+volumes:
+  db_data:

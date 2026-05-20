@@ -1,0 +1,9 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+streamlit==1.37.1
+starlette<0.39
+sqlalchemy==2.0.32
+psycopg[binary]==3.2.3
+pydantic==2.8.2
+google-generativeai==0.7.2
+pyyaml==6.0.2

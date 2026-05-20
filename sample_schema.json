@@ -1,0 +1,5 @@
+{
+  "customers": ["customerNumber", "customerName", "country", "city"],
+  "orders": ["orderNumber", "customerNumber", "orderDate", "status"],
+  "employees": ["employeeId", "firstName", "lastName", "department"]
+}
