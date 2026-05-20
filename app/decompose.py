@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import uvicorn
 
-from app.schema import DEFAULT_SCHEMA_PATH, load_schema
+from app.core.schema import DEFAULT_SCHEMA_PATH, load_schema
 
 
 

@@ -10,7 +10,7 @@ import re
 from dataclasses import dataclass
 from typing import Pattern
 
-from app.audit import log_audit
+from app.core.audit import log_audit
 
 
 @dataclass

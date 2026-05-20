@@ -2,8 +2,8 @@
 
 from sqlalchemy import text
 
-from config import settings
-from db import get_engine
+from app.core.config import settings
+from app.core.db import get_engine
 
 
 def execute_readonly_query(sql: str, params: dict) -> list[dict]:

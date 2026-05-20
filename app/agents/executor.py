@@ -1,6 +1,6 @@
 """Executor agent that runs validated SQL."""
 
-from tools.db_tools import execute_readonly_query
+from app.tools.db_tools import execute_readonly_query
 
 
 class ExecutorAgent:

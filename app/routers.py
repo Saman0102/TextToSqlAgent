@@ -6,7 +6,7 @@ from typing import Dict, List
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
 
-from app.schema import DEFAULT_SCHEMA_PATH, load_schema
+from app.core.schema import DEFAULT_SCHEMA_PATH, load_schema
 from app.decompose import decompose_question
 
 

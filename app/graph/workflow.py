@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from app.agents import ExecutorAgent, LLMClient, PlannerAgent, SQLGeneratorAgent, SQLValidator, SummarizerAgent
-from app.audit import log_audit, make_audit_id
-from app.config import SECRETS_PATHS, SETTINGS_PATH, settings
-from app.schema_context import SchemaMetadata, build_ranked_schema_context, load_schema_metadata
+from app.core.audit import log_audit, make_audit_id
+from app.core.config import SECRETS_PATHS, SETTINGS_PATH, settings
+from app.core.schema_context import SchemaMetadata, build_ranked_schema_context, load_schema_metadata
 
 
 @dataclass
@@ -87,7 +87,7 @@ def run_workflow(
     summarizer = SummarizerAgent(llm)
 
     try:
-        state.plan = planner.run(user_query, state.ranked_schema_context or schema, state.conversation_context)
+        state.plan = planner.run(user_query, state.ranked_schema_context or schema, state.conversation_context, audit_id=state.audit_id)
     except Exception as exc:
         state.errors.append(f"Planner error: {exc}")
         state.errors.append(
@@ -108,6 +108,7 @@ def run_workflow(
             state.ranked_schema_context or schema,
             feedback,
             state.conversation_context,
+            audit_id=state.audit_id,
         )
         state.generated_sql = gen.get("sql", "")
         state.sql_params = gen.get("params", {})
@@ -165,7 +166,7 @@ def run_workflow(
         return state
 
     try:
-        state.final_answer = summarizer.run(user_query, state.execution_results, state.conversation_context)
+        state.final_answer = summarizer.run(user_query, state.execution_results, state.conversation_context, audit_id=state.audit_id)
         try:
             log_audit(
                 "summarizer",
