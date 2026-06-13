@@ -11,60 +11,62 @@ Build a small agentic Text-to-SQL system that "thinks, acts, and corrects itself
 - Return the raw SQL, execution result, and a natural-language summary.
 
 ## File Structure
+
+```text
 .
-├── app
-│   ├── agents
-│   │   ├── executor.py
-│   │   ├── __init__.py
-│   │   ├── llm.py
-│   │   ├── planner.py
-│   │   ├── sql_generator.py
-│   │   ├── summarizer.py
-│   │   └── validator.py
-│   ├── core
-│   │   ├── audit.py
-│   │   ├── config.py
-│   │   ├── db.py
-│   │   ├── __init__.py
-│   │   ├── schema_context.py
-│   │   └── schema.py
-│   ├── graph
-│   │   ├── __init__.py
-│   │   └── workflow.py
-│   ├── __init__.py
-│   ├── main.py
-│   ├── prompts
-│   │   ├── decomposition.md
-│   │   ├── generate.md
-│   │   ├── __init__.py
-│   │   └── templates.py
-│   ├── routers.py
-│   └── tools
-│       ├── db_tools.py
-│       └── __init__.py
-├── config
-│   └── settings.yaml
-├── db
-│   ├── schema.sql
-│   └── seed.sql
+├── app/
+│   ├── agents/
+│   │   ├── executor.py
+│   │   ├── __init__.py
+│   │   ├── llm.py
+│   │   ├── planner.py
+│   │   ├── sql_generator.py
+│   │   ├── summarizer.py
+│   │   └── validator.py
+│   ├── core/
+│   │   ├── audit.py
+│   │   ├── config.py
+│   │   ├── db.py
+│   │   ├── __init__.py
+│   │   ├── schema_context.py
+│   │   └── schema.py
+│   ├── graph/
+│   │   ├── __init__.py
+│   │   └── workflow.py
+│   ├── __init__.py
+│   ├── main.py
+│   ├── prompts/
+│   │   ├── decomposition.md
+│   │   ├── generate.md
+│   │   ├── __init__.py
+│   │   └── templates.py
+│   ├── routers.py
+│   └── tools/
+│       ├── db_tools.py
+│       └── __init__.py
+├── config/
+│   └── settings.yaml
+├── db/
+│   ├── schema.sql
+│   └── seed.sql
 ├── docker-compose.yml
 ├── Dockerfile
-├── evaluation
-│   ├── evaluate.py
-│   ├── questions_and_answers.csv
-│   └── questions_only.csv
+├── evaluation/
+│   ├── evaluate.py
+│   ├── questions_and_answers.csv
+│   └── questions_only.csv
 ├── LICENSE
-├── logs
-│   ├── query_audit.jsonl
-│   └── query_logs.json
+├── logs/
+│   ├── query_audit.jsonl
+│   └── query_logs.json
 ├── README.md
 ├── requirements.txt
 ├── sample_schema.json
 ├── sitecustomize.py
-├── tests
-│   ├── test_agents.py
-│   └── test_audit.py
-└── ui
+├── tests/
+│   ├── test_agents.py
+│   └── test_audit.py
+└── ui/
     └── streamlit_app.py
 
 
