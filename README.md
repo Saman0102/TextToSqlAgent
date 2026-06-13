@@ -66,9 +66,9 @@ Build a small agentic Text-to-SQL system that "thinks, acts, and corrects itself
 ├── tests/
 │   ├── test_agents.py
 │   └── test_audit.py
-└── ui/
-    └── streamlit_app.py
-
+├──ui/
+|   └── streamlit_app.py
+└──.gitignore
 
 ## API (required)
 
