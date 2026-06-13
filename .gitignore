@@ -36,7 +36,6 @@ venv/
 .venv/
 node_modules/
 pip-wheel-metadata/
-*.sql
 tests/
 .*csv
 prompts

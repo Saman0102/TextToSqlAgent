@@ -22,11 +22,31 @@ def _normalize_sql(sql: str) -> str:
 
 
 def evaluate(database_url: str | None = None) -> int:
+	import csv
+	from pathlib import Path
+
+	benchmark_data = []
+	csv_path = Path(__file__).resolve().parent / "questions_and_answers.csv"
+	if csv_path.exists():
+		with csv_path.open("r", encoding="utf-8") as f:
+			reader = csv.DictReader(f)
+			for row in reader:
+				q = row.get("question", "").strip()
+				a = row.get("answer", "").strip()
+				if q and a and not q.startswith("."):
+					benchmark_data.append({
+						"question": q,
+						"expected_sql": a
+					})
+
+	if not benchmark_data:
+		benchmark_data = BENCHMARK_DATA
+
 	report_rows = []
 	success_count = 0
 	retry_success_count = 0
 
-	for entry in BENCHMARK_DATA:
+	for entry in benchmark_data:
 		question = entry['question']
 		expected_sql = entry['expected_sql']
 		result = run_pipeline(question, database_url=database_url)
@@ -54,7 +74,7 @@ def evaluate(database_url: str | None = None) -> int:
 			}
 		)
 
-	total = len(BENCHMARK_DATA)
+	total = len(benchmark_data)
 	failed_total = total - success_count
 	retry_rate = (retry_success_count / success_count * 100.0) if success_count else 0.0
 	success_rate = (success_count / total * 100.0) if total else 0.0

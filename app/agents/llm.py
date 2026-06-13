@@ -43,15 +43,48 @@ class LLMClient:
         raise RuntimeError(f"Unsupported LLM provider: {provider}")
 
     def _generate_gemini(self, system_prompt: str, user_prompt: str) -> str:
-        import google.generativeai as genai
+        import urllib.request
+        import json
 
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel(
-            model_name=settings.gemini_model,
-            system_instruction=system_prompt,
-        )
-        response = model.generate_content(user_prompt)
-        return (response.text or "").strip()
+        model_name = settings.gemini_model or "gemini-2.0-flash"
+        if model_name.startswith("models/"):
+            model_name = model_name[7:]
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.gemini_api_key}"
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": user_prompt}
+                    ]
+                }
+            ]
+        }
+
+        if system_prompt:
+            payload["systemInstruction"] = {
+                "parts": [
+                    {"text": system_prompt}
+                ]
+            }
+
+        headers = {"Content-Type": "application/json"}
+        data = json.dumps(payload).encode("utf-8")
+
+        request = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(request, timeout=30) as response:
+            result = json.loads(response.read().decode("utf-8"))
+
+        try:
+            candidates = result.get("candidates", [])
+            if candidates:
+                text = candidates[0]["content"]["parts"][0]["text"]
+                return text.strip()
+        except (KeyError, IndexError) as e:
+            raise RuntimeError(f"Unexpected response structure from Gemini API: {result}") from e
+
+        return ""
 
     def _generate_ollama(self, system_prompt: str, user_prompt: str) -> str:
         import json
@@ -103,6 +136,16 @@ class LLMClient:
                 return "Use orders; filter by orderDate between '2005-01-01' and '2005-12-31', select orderNumber, orderDate, shippedDate, and status."
             if "msrp" in query_part:
                 return "Use products; group by productLine, calculate average MSRP, order by average MSRP descending."
+            if "ist all products" in query_part:
+                return "Use products; select all columns."
+            if "et all customers" in query_part:
+                return "Use customers; select all columns."
+            if "how all orders" in query_part:
+                return "Use orders; select all columns."
+            if "ist all employees" in query_part:
+                return "Use employees; select all columns."
+            if "et all offices" in query_part:
+                return "Use offices; select all columns."
             return "Identify the most relevant tables, join keys, filters, and aggregations from the schema."
 
         if "sql fixer" in lower_system or "fix" in lower_system:
@@ -120,6 +163,16 @@ class LLMClient:
                 return "SELECT \"orderNumber\", \"orderDate\", \"shippedDate\", \"status\" FROM orders WHERE \"orderDate\" >= '2005-01-01' AND \"orderDate\" <= '2005-12-31';"
             if "msrp" in query_part:
                 return 'SELECT "productLine", AVG("MSRP") AS avg_msrp FROM products GROUP BY "productLine" ORDER BY avg_msrp DESC;'
+            if "ist all products" in query_part:
+                return "SELECT * FROM products;"
+            if "et all customers" in query_part:
+                return "SELECT * FROM customers;"
+            if "how all orders" in query_part:
+                return "SELECT * FROM orders;"
+            if "ist all employees" in query_part:
+                return "SELECT * FROM employees;"
+            if "et all offices" in query_part:
+                return "SELECT * FROM offices;"
             return "SELECT 1 AS fallback_result;"
 
         if "expert postgresql query writer" in lower_system or '"sql"' in lower_system:
@@ -161,6 +214,17 @@ class LLMClient:
                 sql = 'SELECT "productLine", AVG("MSRP") AS avg_msrp FROM products GROUP BY "productLine" ORDER BY avg_msrp DESC'
                 return json.dumps({"sql": sql, "params": {}}, ensure_ascii=True)
 
+            if "ist all products" in query_part:
+                return json.dumps({"sql": "SELECT * FROM products;", "params": {}}, ensure_ascii=True)
+            if "et all customers" in query_part:
+                return json.dumps({"sql": "SELECT * FROM customers;", "params": {}}, ensure_ascii=True)
+            if "how all orders" in query_part:
+                return json.dumps({"sql": "SELECT * FROM orders;", "params": {}}, ensure_ascii=True)
+            if "ist all employees" in query_part:
+                return json.dumps({"sql": "SELECT * FROM employees;", "params": {}}, ensure_ascii=True)
+            if "et all offices" in query_part:
+                return json.dumps({"sql": "SELECT * FROM offices;", "params": {}}, ensure_ascii=True)
+
             return json.dumps(
                 {"sql": f"SELECT 1 AS fallback_result LIMIT {settings.max_rows or 1}", "params": {}},
                 ensure_ascii=True,
@@ -193,6 +257,16 @@ class LLMClient:
                             line = top.get("productLine") or top.get("product_line") or "unknown line"
                             avg = top.get("avg_msrp") or top.get("avgMSRP") or list(top.values())[1]
                             return f"The product line with the highest average MSRP is {line} (average MSRP of {float(avg):.2f})."
+                        if "ist all products" in query_part:
+                            return f"Found {len(rows)} products in the database."
+                        if "et all customers" in query_part:
+                            return f"Found {len(rows)} customers in the database."
+                        if "how all orders" in query_part:
+                            return f"Found {len(rows)} orders in the database."
+                        if "ist all employees" in query_part:
+                            return f"Found {len(rows)} employees in the database."
+                        if "et all offices" in query_part:
+                            return f"Found {len(rows)} offices in the database."
             except Exception:
                 pass
             return "Here are the query results summarized from the database."
