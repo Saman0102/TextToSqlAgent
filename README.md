@@ -69,7 +69,7 @@ Build a small agentic Text-to-SQL system that "thinks, acts, and corrects itself
 ├──ui/
 |   └── streamlit_app.py
 └──.gitignore
-
+```
 ## API (required)
 
 Create a FastAPI endpoint to serve the agent:
