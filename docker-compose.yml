@@ -10,7 +10,7 @@ services:
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
-      - ./schema.sql:/docker-entrypoint-initdb.d/init.sql:Z
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/seed.sql:Z
       - pgdata:/var/lib/postgresql/data:Z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
@@ -19,16 +19,34 @@ services:
       retries: 5
   api:
     build: .
-    container_name: streamlit_app
+    container_name: text-to-sql-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      # Wait for database to be healthy before starting API
+      db:
+        condition: service_healthy
+  ui:
+    build: .
+    container_name: text-to-sql-ui
     restart: unless-stopped
     ports:
       - "8501:8501"
     env_file:
       - .env
+    environment:
+      BACKEND_URL: http://api:8000
+    command: ["streamlit", "run", "ui/streamlit_app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
     depends_on:
-      # Wait for database to be healthy before starting API
-      db:
-        condition: service_healthy
+      - api
+    volumes:
+      - ./evaluation:/app/evaluation:ro
 
 volumes:
   pgdata:

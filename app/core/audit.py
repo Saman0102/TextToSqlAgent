@@ -1,6 +1,7 @@
-"""Simple audit logger for query attempts and execution events.
+"""Canonical source for audit logging. Do not import from any other location.
 
 Writes JSON lines to `logs/query_audit.jsonl` in the repository root.
+Merged from: app/audit.py, app/core/audit.py.
 """
 
 from __future__ import annotations

@@ -18,12 +18,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy the rest of the code
 COPY . .
 
-# EXPOSE Streamlit port
-EXPOSE 8501
+# Expose the API port
+EXPOSE 8000
 
 # FIX: Switch to a non-root user so vulnerabilities cannot access the root filesystem
 RUN useradd -m agentuser && chown -R agentuser:agentuser /app
 USER agentuser
 
-# Entrypoint for CLI and Streamlit UI
-CMD ["python", "main.py", "serve", "--host", "0.0.0.0", "--port", "8501"]
+# Entrypoint for the FastAPI backend
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

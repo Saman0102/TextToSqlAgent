@@ -26,14 +26,14 @@ class WorkflowState:
 
 
 def _load_schema() -> str:
-    schema_path = Path(__file__).resolve().parents[1] / "sql" / "seed.sql"
+    schema_path = Path(__file__).resolve().parents[2] / "db" / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")
     return schema_path.read_text(encoding="utf-8")
 
 
 def _load_schema_metadata() -> SchemaMetadata:
-    schema_path = Path(__file__).resolve().parents[1] / "sql" / "seed.sql"
+    schema_path = Path(__file__).resolve().parents[2] / "db" / "schema.sql"
     if not schema_path.exists():
         raise FileNotFoundError(f"Schema file not found: {schema_path}")
     return load_schema_metadata(schema_path)
@@ -58,7 +58,7 @@ def _format_conversation_context(conversation_history: Optional[List[Dict[str, s
 
 def run_workflow(
     user_query: str,
-    max_attempts: int = 3,
+    max_attempts: int = 4,
     conversation_history: Optional[List[Dict[str, str]]] = None,
 ) -> WorkflowState:
     audit_id = make_audit_id()
@@ -100,18 +100,33 @@ def run_workflow(
         )
         return state
 
+    import time
     feedback = ""
+    error_message = ""
+    success = False
     for attempt in range(max_attempts):
-        gen = generator.run(
-            user_query,
-            state.plan,
-            state.ranked_schema_context or schema,
-            feedback,
-            state.conversation_context,
-            audit_id=state.audit_id,
-        )
-        state.generated_sql = gen.get("sql", "")
-        state.sql_params = gen.get("params", {})
+        if attempt > 0 and error_message:
+            fixed_sql = generator.fix_sql(
+                question=user_query,
+                sql=state.generated_sql,
+                error=error_message,
+                schema=state.ranked_schema_context or schema,
+                audit_id=state.audit_id,
+            )
+            state.generated_sql = fixed_sql
+            state.sql_params = {}
+        else:
+            gen = generator.run(
+                user_query,
+                state.plan,
+                state.ranked_schema_context or schema,
+                feedback,
+                state.conversation_context,
+                audit_id=state.audit_id,
+            )
+            state.generated_sql = gen.get("sql", "")
+            state.sql_params = gen.get("params", {})
+
         try:
             log_audit(
                 "generation",
@@ -127,42 +142,55 @@ def run_workflow(
 
         validation = validator.validate(state.generated_sql, audit_id=state.audit_id)
         state.is_valid_sql = validation.is_valid
-        if state.is_valid_sql:
+        if not state.is_valid_sql:
+            feedback = f"SQL query validation failed: {validation.message}. Please generate a corrected SQL query."
+            state.errors.append(f"Validator error (attempt {attempt + 1}): {validation.message}")
+            error_message = ""
+            continue
+
+        exec_start = time.time()
+        try:
+            state.execution_results = executor.run(state.generated_sql, state.sql_params)
+            duration = round(time.time() - exec_start, 3)
+            try:
+                log_audit(
+                    "execution",
+                    {
+                        "sql": state.generated_sql,
+                        "params": state.sql_params,
+                        "rows": len(state.execution_results) if state.execution_results is not None else 0,
+                        "duration_seconds": duration,
+                    },
+                    audit_id=state.audit_id,
+                )
+            except Exception:
+                pass
+            success = True
             break
+        except Exception as exc:
+            duration = round(time.time() - exec_start, 3)
+            error_message = str(exc)
+            feedback = f"Database execution failed with error: {exc}. Please fix the query."
+            state.errors.append(f"Execution error (attempt {attempt + 1}): {exc}")
+            try:
+                log_audit(
+                    "execution",
+                    {
+                        "sql": state.generated_sql,
+                        "params": state.sql_params,
+                        "error": str(exc),
+                        "duration_seconds": duration,
+                    },
+                    audit_id=state.audit_id,
+                )
+            except Exception:
+                pass
 
-        feedback = validation.message
-        state.errors.append(f"Validator error: {validation.message}")
-
-    if not state.is_valid_sql:
-        state.final_answer = "Unable to produce a valid read-only SQL query."
-        return state
-
-    try:
-        state.execution_results = executor.run(state.generated_sql, state.sql_params)
-        # audit successful execution
-        try:
-            log_audit(
-                "execution",
-                {
-                    "sql": state.generated_sql,
-                    "params": state.sql_params,
-                    "rows": len(state.execution_results) if state.execution_results is not None else 0,
-                },
-                audit_id=state.audit_id,
-            )
-        except Exception:
-            pass
-    except Exception as exc:
-        state.errors.append(f"Execution error: {exc}")
-        try:
-            log_audit(
-                "execution",
-                {"sql": state.generated_sql, "params": state.sql_params, "error": str(exc)},
-                audit_id=state.audit_id,
-            )
-        except Exception:
-            pass
-        state.final_answer = "Query execution failed."
+    if not success:
+        if not state.is_valid_sql:
+            state.final_answer = "Unable to produce a valid read-only SQL query."
+        else:
+            state.final_answer = "Query execution failed."
         return state
 
     try:

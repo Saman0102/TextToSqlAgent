@@ -1,6 +1,8 @@
-"""Application configuration loaded from config files.
+"""Canonical source for configuration. Do not import from any other location.
 
-Moved into `app.core` for clearer structure.
+Merged from: config_loader.py (root), app/config.py, app/core/config.py.
+Loads config/settings.yaml and config/.secrets.yaml, exposes a frozen Settings
+dataclass and a convenience ``get_config_value`` helper.
 """
 
 from dataclasses import dataclass
@@ -63,6 +65,18 @@ def _get_int(config: Dict[str, Any], keys: Iterable[str], default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return int(default)
+
+
+# --- Convenience helpers ---
+
+def load_config() -> Dict[str, Any]:
+    """Return the merged settings + secrets config dict."""
+    return _load_config()
+
+
+def get_config_value(key: str, default: Any = None) -> Any:
+    """Look up a single config key from the merged settings + secrets."""
+    return _load_config().get(key, default)
 
 
 @dataclass(frozen=True)

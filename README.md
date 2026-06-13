@@ -84,7 +84,17 @@ The agent must implement the following steps (this README documents the intended
   - (A) Extend `run_workflow()` to implement the execution-error → LLM-fix → validate → retry loop (recommended), or
   - (B) Reuse the legacy `executor.py` flow and adapt it into the agent pipeline, increasing retries to 3 and adding audit records.
 
-## Running the service (example)
+## Repository layout
+
+- `app/`: FastAPI backend, agents, core infrastructure, graph orchestration, prompts, and tools.
+- `ui/`: Streamlit client that talks to the API over HTTP.
+- `evaluation/`: local evaluation scripts and datasets.
+- `db/`: SQL schema and seed files.
+- `config/`: runtime settings.
+- `tests/`: unit tests.
+- `logs/`: audit and query logs.
+
+## Running the service
 
 Install dependencies into a Python 3.10+ virtualenv:
 
@@ -94,24 +104,34 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Run the FastAPI app (if `app.main` provides the FastAPI app):
+Run the API:
 
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload
 ```
 
-Or run the Streamlit UI (local exploration):
+Run the Streamlit UI:
 
 ```bash
-python main.py serve --host 0.0.0.0 --port 8501
+streamlit run ui/streamlit_app.py
 ```
 
-## Running tests
-
-Run the unit tests with `pytest`:
+Run evaluation:
 
 ```bash
-pytest -q
+python evaluation/evaluate.py
+```
+
+Run tests:
+
+```bash
+pytest tests/
+```
+
+Start with Docker:
+
+```bash
+docker-compose up --build
 ```
 
 ## Notes and safety

@@ -7,6 +7,17 @@ from app.core.config import settings
 from app.prompts import SQL_GENERATOR_SYSTEM_PROMPT
 from app.core.audit import log_audit
 
+FIX_SYSTEM_PROMPT = (
+    "You are a SQL fixer for PostgreSQL. Return only a corrected SQL SELECT statement."
+)
+FIX_USER_PROMPT = (
+    "Schema:\n{schema}\n\n"
+    "Original Question: {question}\n"
+    "Generated SQL:\n{sql}\n\n"
+    "Database Error:\n{error}\n\n"
+    "Return a corrected SQL SELECT statement only."
+)
+
 
 class SQLGeneratorAgent:
     def __init__(self, llm) -> None:
@@ -58,3 +69,33 @@ class SQLGeneratorAgent:
         if not isinstance(params, dict):
             params = {}
         return {"sql": sql, "params": params}
+
+    def fix_sql(
+        self,
+        question: str,
+        sql: str,
+        error: str,
+        schema: str,
+        audit_id: str | None = None,
+    ) -> str:
+        """Repair a failed SQL statement using LLM feedback (from root sql_generator.py)."""
+        user_prompt = FIX_USER_PROMPT.format(
+            schema=schema,
+            question=question,
+            sql=sql,
+            error=error,
+        )
+        try:
+            log_audit(
+                "prompt",
+                {
+                    "phase": "fix",
+                    "system": FIX_SYSTEM_PROMPT[:2000],
+                    "user": user_prompt[:4000],
+                },
+                audit_id=audit_id,
+            )
+        except Exception:
+            pass
+        response = self.llm.generate(FIX_SYSTEM_PROMPT, user_prompt)
+        return response.strip().rstrip(";") + ";"

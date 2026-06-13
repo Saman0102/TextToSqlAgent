@@ -1,7 +1,8 @@
-"""Schema introspection and query-aware schema ranking (core package).
+"""Canonical source for schema context ranking. Do not import from any other location.
 
-This is a copy of the schema_context implementation, adapted to live under
-`app.core` and to import the core schema loader.
+Merged from: app/schema_context.py, app/core/schema_context.py.
+Loads SQL schema metadata, extracts foreign-key relations, and builds a compact
+schema slice ranked by relevance to the current question and conversation context.
 """
 
 from __future__ import annotations

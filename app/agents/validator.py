@@ -112,3 +112,9 @@ class SQLValidator:
             pass
 
         return ValidationResult(True, "OK")
+
+
+def validate_sql(sql: str) -> tuple[bool, str]:
+    """Backward-compatible helper from root validator.py."""
+    result = SQLValidator().validate(sql)
+    return result.is_valid, "" if result.is_valid else result.message

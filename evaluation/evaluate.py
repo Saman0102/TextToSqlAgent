@@ -2,7 +2,7 @@ import argparse
 import re
 from typing import Dict, List
 
-from executor import run_pipeline
+from app.agents.executor import run_pipeline
 
 
 BENCHMARK_DATA: List[Dict[str, str]] = [

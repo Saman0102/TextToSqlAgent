@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 from html import escape
+import json
+from pathlib import Path
 from typing import Dict, List
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 from app.core.schema import DEFAULT_SCHEMA_PATH, load_schema
-from app.decompose import decompose_question
+from app.agents.planner import decompose_question
+from app.graph.workflow import run_workflow
+
+
+class AgentRequest(BaseModel):
+	question: str
+	conversation_history: List[Dict[str, str]] | None = None
 
 
 router = APIRouter()
@@ -144,5 +153,45 @@ async def decompose_form(request: Request):
 		</div>
 	</body>
 </html>
-		'''
-	)
+		''')
+
+
+@router.post('/agent/sql')
+def agent_sql(payload: AgentRequest):
+	state = run_workflow(payload.question, conversation_history=payload.conversation_history)
+	status = "success" if state.is_valid_sql and state.execution_results is not None else "failed"
+	
+	result_val = state.execution_results
+	if isinstance(result_val, list) and len(result_val) == 1:
+		row = result_val[0]
+		if isinstance(row, dict) and len(row) == 1:
+			result_val = list(row.values())[0]
+
+	return {
+		"sql": state.generated_sql,
+		"result": result_val,
+		"summary": state.final_answer,
+		"status": status
+	}
+
+
+@router.get('/agent/audit/{audit_id}')
+def agent_audit(audit_id: str, limit: int = 20):
+	audit_log_path = Path(__file__).resolve().parents[1] / "logs" / "query_audit.jsonl"
+	if not audit_id or not audit_log_path.exists():
+		return []
+	entries = []
+	try:
+		with audit_log_path.open("r", encoding="utf-8") as handle:
+			for line in handle:
+				if not line.strip():
+					continue
+				try:
+					record = json.loads(line)
+				except json.JSONDecodeError:
+					continue
+				if record.get("audit_id") == audit_id:
+					entries.append(record)
+	except Exception:
+		return []
+	return entries[-limit:]
