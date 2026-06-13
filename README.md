@@ -76,14 +76,6 @@ The agent must implement the following steps (this README documents the intended
 - Orchestration: `app.graph.workflow.run_workflow` — wires planner→generator→validator→executor→summarizer, emits `audit_id`, and writes audit JSONL events.
 - Audit/logging: `app.core.audit` writes append-only JSONL entries for prompts, generation, validation, execution, and summarization.
 
-## Current behavior vs. requirement
-
-- The orchestration performs the planner→generator→validator generation retry loop up to `max_attempts` (default 3).
-- Execution is performed and audited. On execution exceptions, `run_workflow()` currently logs the error and returns a failure rather than performing an LLM-driven fix+retry loop.
-- A legacy script (`executor.py` at repository root) implements a single fix+retry cycle using `fix_sql()`. To fully satisfy the requirement you can either:
-  - (A) Extend `run_workflow()` to implement the execution-error → LLM-fix → validate → retry loop (recommended), or
-  - (B) Reuse the legacy `executor.py` flow and adapt it into the agent pipeline, increasing retries to 3 and adding audit records.
-
 ## Repository layout
 
 - `app/`: FastAPI backend, agents, core infrastructure, graph orchestration, prompts, and tools.
