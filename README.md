@@ -156,6 +156,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Create a `.env` file in `assignment/` (or update the existing one) with:
+
+```
+api=google_api_key
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=your_db
+POSTGRES_PORT=5433
+POSTGRES_HOST=localhost
+DATABASE_URL=postgresql+psycopg2://your_user:your_password@localhost:5433/your_db
+```
+
+
+Start with Docker:
+
+```bash
+docker-compose up --build
+```
 Run the API:
 
 ```bash
@@ -180,11 +198,6 @@ Run tests:
 pytest tests/
 ```
 
-Start with Docker:
-
-```bash
-docker-compose up --build
-```
 
 ## Notes and safety
 
