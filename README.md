@@ -158,7 +158,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in `assignment/` (or update the existing one) with:
+Create a `.env` file in base directory (or update the existing one) with:
 
 ```
 api=google_api_key
