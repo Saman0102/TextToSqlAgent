@@ -1,5 +1,4 @@
 .env
-.env.*
 .secrets
 .secrets.*
 config/.secrets
@@ -37,5 +36,5 @@ venv/
 node_modules/
 pip-wheel-metadata/
 tests/
-.*csv
+*.csv
 prompts
